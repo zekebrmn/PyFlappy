@@ -1,0 +1,10 @@
+HEIGHT=525
+WIDTH=340
+FPS=60
+TITLE='PyFlappy by Ezekiel Berumen'
+FONT='./font/font.TTF'
+
+WHITE=(255,255,255)
+BLACK=(0,0,0)
+GRAY=(158,158,158)
+BACKGROUND=(94, 163, 209)
