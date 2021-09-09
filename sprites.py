@@ -1,16 +1,19 @@
 import pygame as pg
+from settings import *
 vec = pg.math.Vector2
 FRIC=-0.12
 HEIGHT=525
 WIDTH=340
 
 class Player(pg.sprite.Sprite):
-    def __init__(self, game):
+    def __init__(self, app):
         super().__init__()
-        self.app = game
-        #self.surf = pg.Surface((32, 32))
-        self.surf = pg.image.load("./img/amongus.png")
-        #self.surf.fill((255,255,255))
+        self.app = app
+        if app.character is None:
+            self.surf = pg.Surface((32, 32))
+            self.surf.fill(BLACK)
+        else :
+            self.surf = pg.image.load('./img/' + app.character_root[app.character])
         self.rect=self.surf.get_rect()
         self.rect.center=(85,185)
 
