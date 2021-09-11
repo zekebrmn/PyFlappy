@@ -98,17 +98,20 @@ class App():
 
         #Pipe Collision
         for bottom_pipe in self.pipeListBottom:
+            #if bottom_pipe.rect.x > 85:
+            hit_pipe = pg.sprite.collide_rect(self.player, bottom_pipe)
+            #hit_pipe = self.player.rect.colliderect(bottom_pipe.rect)
+            if hit_pipe:
+                break
             if bottom_pipe.rect.x == self.player.rect.x or bottom_pipe.rect.x == self.player.rect.x - 1:
                 self.score += 1
                 self.label = self.font_obj.render(str(self.score), 1, (0,0,0))
-            if bottom_pipe.rect.x > 85:
-                hit_pipe = pg.sprite.collide_rect(self.player, bottom_pipe)
-                if hit_pipe:
-                    break
         
         for top_pipe in self.pipeListTop:
-            if top_pipe.rect.x > 85 and hit_pipe == False:
-                hit_pipe = pg.sprite.collide_rect(self.player, top_pipe)
+            if hit_pipe == False:
+            #if top_pipe.rect.x > 85 and hit_pipe == False:
+                hit_pipe = self.player.rect.colliderect(top_pipe.rect)
+                #hit_pipe = pg.sprite.collide_rect(self.player, top_pipe)
                 if hit_pipe:
                     break
 

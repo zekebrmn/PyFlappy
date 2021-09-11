@@ -5,7 +5,7 @@ from settings import *
 import os, sys
 
 def sort_key(scores):
-    return scores[1]
+    return int(scores[1])
 
 def get_scoreboard():
     list = []
@@ -25,7 +25,6 @@ def write_scoreboard(name, score):
     file = open('./strg/scores.txt', 'a')
     file.write('%s %s\n' % (name, score))
     file.close()
-
 
 def draw_text(screen, text, size, color, x, y):
     font = pg.font.Font(FONT, size)
@@ -146,7 +145,6 @@ class grid():
                 return False
             
         return grid_button()
-
 
 def draw_scoreboard(screen):
     y = 100
