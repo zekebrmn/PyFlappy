@@ -1,30 +1,47 @@
 from typing import List
 import pygame as pg
-from pygame.scrap import get
 from settings import *
+import sqlite3
 import os, sys
 
 def sort_key(scores):
     return int(scores[1])
 
-def get_scoreboard():
-    list = []
-    file = open('./strg/scores.txt', 'r')
-    i = 0
-    for line in file:
-        strip = line.strip()
-        score = strip.split()
-        list.append(score)
-        i += 1
+def get_scoreboard(connection):
+    if connection:
+        cursor = connection.cursor()
+        list = []
+        for row in cursor.execute('SELECT * FROM scores'):
+            score = (row[0] + ' ' + str(row[1])).split()
+            list.append(score)
+        #file = open('./strg/scores.txt', 'r')
+        # = 0
+        #for line in file:
+        #    strip = line.strip()
+        #    score = strip.split()
+        #    list.append(score)
+        #    i += 1
     list.sort(key=sort_key, reverse=True)
     return list
 
-def write_scoreboard(name, score):
+def write_scoreboard(name, score, connection):
     name = str(name)
-    score = str(score)
-    file = open('./strg/scores.txt', 'a')
-    file.write('%s %s\n' % (name, score))
-    file.close()
+    score = int(score)
+    if connection:
+        cursor = connection.cursor()
+
+        cursor.execute('''SELECT score FROM scores WHERE name = ?''', (name,))
+        data=cursor.fetchone()
+        if data is None:
+            cursor.execute('''INSERT INTO scores VALUES (?, ?)''', (name,score))
+        elif score > data[0]:
+            cursor.execute('''UPDATE scores SET score = ? WHERE name = ?''',(score,name))
+                
+
+        connection.commit()
+    #file = open('./strg/scores.txt', 'a')
+    #file.write('%s %s\n' % (name, score))
+    #file.close()
 
 def draw_text(screen, text, size, color, x, y):
     font = pg.font.Font(FONT, size)
@@ -146,11 +163,11 @@ class grid():
             
         return grid_button()
 
-def draw_scoreboard(screen):
+def draw_scoreboard(screen, connection):
     y = 100
     width = 292
     height = 32
-    scoreboard = get_scoreboard()
+    scoreboard = get_scoreboard(connection)
     for i in range(len(scoreboard)):
         if i <= 9:
             y += 37

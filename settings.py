@@ -4,6 +4,8 @@ FPS=60
 TITLE='Bernard Flap '
 FONT='./font/font.TTF'
 VERSION='v0.1.0b pre'
+CHARACTER_LIST=['Troll', 'Among Us', 'Bernard']
+CHARACTER_ROOT={'Troll': 'default.png', 'Among Us': 'amongus.png', 'Bernard': 'bnard.png'}
 
 WHITE=(255,255,255)
 BLACK=(0,0,0)

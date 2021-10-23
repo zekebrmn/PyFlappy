@@ -4,10 +4,10 @@ from buttons import *
 from settings import *
 from menu import *
 from util import *
+from entry import *
 import random
-
-def pipeLength():
-    return random.randint(50,300)
+import sqlite3
+from sqlite3 import Error
 
 class App():
     def __init__(self):
@@ -33,13 +33,39 @@ class App():
         self.button_sprites = pg.sprite.Group()
         self.menu = False
         self.selected_menu = None
-        self.character_list = ['Troll', 'Among Us', 'Bernard']
-        self.character_root = {'Troll': 'default.png', 'Among Us': 'amongus.png', 'Bernard': 'bnard.png'}
+        self.character_list = CHARACTER_LIST
+        self.character_root = CHARACTER_ROOT
         self.character = None
+        self.create_connection('.\strg\scores.db')
+        self.create_table()
         for i in range(5):
-            length = random.randint(50,300)
-            self.pipeListTop.add(pipe_top(length,400 + (i * 165)))
-            self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400 + (i*165)))
+            #length = random.randint(50,300)
+            length = random.choice([50, 75, 100, 125, 150, 175, 200, 225, 250, 275])
+            top_pipe = pipe_top(length,400 + (i * 165))
+            self.pipeListTop.add(top_pipe)
+            #self.pipeListTop.add(pipe_top(length,400 + (i*165)))
+            self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400 + (i*165), top_pipe))
+            #self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400+(i*165)))
+
+    def create_connection(self, db_file):
+        self.connection = None
+        try:
+            self.connection = sqlite3.connect(db_file)
+            print('Successful Database Connection!')
+        except Error as e:
+            print(f"The error '{e}' occured!")
+        
+        return self.connection
+    
+    def create_table(self):
+        if self.connection:
+            cursor = self.connection.cursor()
+
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS scores
+            ([name] TEXT PRIMARY KEY, [score] INTERGER)''')
+
+            self.connection.commit()
 
     def new(self):
         # start a new game
@@ -55,9 +81,13 @@ class App():
             self.pipeListTop.empty()
 
             for i in range(5):
-                length = random.randint(50,300)
-                self.pipeListTop.add(pipe_top(length,400 + (i*165)))
-                self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400+(i*165)))
+                #length = random.randint(50,300) too random
+                length = random.choice([50, 75, 100, 125, 150, 175, 200, 225, 250, 275])
+                top_pipe = pipe_top(length,400 + (i * 165))
+                self.pipeListTop.add(top_pipe)
+                #self.pipeListTop.add(pipe_top(length,400 + (i*165)))
+                self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400+(i*165), top_pipe))
+                #self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400+(i*165)))
         self.run()
 
     def run(self):
@@ -69,20 +99,26 @@ class App():
                 if self.pipes:
                     for bottom_pipe in self.pipeListBottom:
                         bottom_pipe.move()
+                        #bottom_pipe.move_y() #move pipe y
                         if bottom_pipe.rect.x <= -50:
                             bottom_pipe.kill()
                             pass
         
                     for top_pipe in self.pipeListTop:
                         top_pipe.move()
+                        #top_pipe.move_y() #move pipe y
                         if top_pipe.rect.x <= -50:
                             top_pipe.kill()
                             pass
                     
                     while len(self.pipeListBottom) < 5:
-                        length = random.randint(50,300)
-                        self.pipeListTop.add(pipe_top(length,400 + ((len(self.pipeListBottom) - 1.6)  * 165)))
-                        self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400 + ((len(self.pipeListBottom) - 1.6)*165)))
+                        #length = random.randint(50,300) Too Random
+                        length = random.choice([50, 75, 100, 125, 150, 175, 200, 225, 250, 275])
+                        top_pipe = pipe_top(length,400 + ((len(self.pipeListBottom) - 1.6)  * 165))
+                        self.pipeListTop.add(top_pipe)
+                        #self.pipeListTop.add(pipe_top(length,400 + ((len(self.pipeListBottom) - 1.6)  * 165))) Does not allow simple pipe movement on y axis
+                        self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400 + ((len(self.pipeListBottom) - 1.6)*165), top_pipe))
+                        #self.pipeListBottom.add(pipe_bottom((HEIGHT-length)-140,400+(i*165))) ^^
             self.clock.tick(FPS)
             self.events()
             self.update()
@@ -96,20 +132,21 @@ class App():
         hit_ground = pg.sprite.collide_rect(self.player, self.ground)
         hit_pipe = False
 
-        #Pipe Collision
+        #Pipe Collision and score management
         for bottom_pipe in self.pipeListBottom:
-            #if bottom_pipe.rect.x > 85:
+            #if bottom_pipe.rect.x > 85: fixes on sided collision issue.
             hit_pipe = pg.sprite.collide_rect(self.player, bottom_pipe)
-            #hit_pipe = self.player.rect.colliderect(bottom_pipe.rect)
+            #hit_pipe = self.player.rect.colliderect(bottom_pipe.rect) unnecessary collision check
             if hit_pipe:
                 break
-            if bottom_pipe.rect.x == self.player.rect.x or bottom_pipe.rect.x == self.player.rect.x - 1:
+            if bottom_pipe.rect.x <= 85 and bottom_pipe.scored == False:
+                bottom_pipe.scored = True
                 self.score += 1
                 self.label = self.font_obj.render(str(self.score), 1, (0,0,0))
         
         for top_pipe in self.pipeListTop:
             if hit_pipe == False:
-            #if top_pipe.rect.x > 85 and hit_pipe == False:
+            #if top_pipe.rect.x > 85 and hit_pipe == False: Unnecessary
                 hit_pipe = self.player.rect.colliderect(top_pipe.rect)
                 #hit_pipe = pg.sprite.collide_rect(self.player, top_pipe)
                 if hit_pipe:
@@ -119,13 +156,9 @@ class App():
         if hit_pipe:
             self.pipes = False
             self.playing = False
-            if self.score > 0:
-                write_scoreboard('Undefined', self.score)
         if hit_ground:
             self.started = False
             self.playing = False
-            if self.score > 0:
-                write_scoreboard('Undefined', self.score)
         
     def events(self):
         # Game Loop - events
@@ -178,11 +211,28 @@ class App():
 
 
     def show_go_screen(self):
+        self.name_entry = None
+        if(self.score > 0):
+            self.name_entry = Entry(WIDTH/2,HEIGHT *1/2,205,40,self.screen,pg.font.Font(self.font_path, 24))
+        pg.display.flip()
+        done = False if self.name_entry is not None else True
+        while not done:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    done = True
+                self.name_entry.handle_event(event)
+            self.screen.fill(BACKGROUND)
+            self.draw_text("GAME OVER", 32, WHITE, WIDTH/2,HEIGHT/4-40) # Draw text
+            self.draw_text("Your Score: " + str(self.score), 18, WHITE, WIDTH/2,HEIGHT/4 -5)
+            self.name_entry.draw(self.screen)
+            done = True if self.name_entry.done else False
+            pg.display.flip()
+        if self.score > 0 and self.name_entry is not None:
+            write_scoreboard(self.name_entry.text, self.score, self.connection)
         self.screen.fill(BACKGROUND)
         self.draw_text("GAME OVER", 32, WHITE, WIDTH/2,HEIGHT/4-40) # Draw text
         self.draw_text("Your Score: " + str(self.score), 18, WHITE, WIDTH/2,HEIGHT/4 -5)
         self.draw_text("Press any key to restart", 18, WHITE, WIDTH/2,HEIGHT * 3/4)
-        pg.display.flip()
         self.wait()
         pass
 
@@ -199,8 +249,9 @@ class App():
                     waiting = False
                     self.running = False
                 if event.type == pg.KEYUP and self.menu == False:
-                    waiting = False
-                    self.pipes = True
+                    if event.key is not pg.K_RETURN:
+                        waiting = False
+                        self.pipes = True
                 if event.type == pg.MOUSEMOTION: #Check for mouse hover
                     pos = pg.mouse.get_pos()
                     if self.menu == False: #Main Menu check
@@ -218,7 +269,7 @@ class App():
                                     if b.text == "Character":
                                         grid(self.screen, self.character_list, self.selected_menu, self)
                                     elif b.text == "Scoreboard":
-                                        draw_scoreboard(self.screen)
+                                        draw_scoreboard(self.screen, self.connection)
                                     break
                         else:
                             for b in self.selected_menu.buttons: #Check for menu button clicks
@@ -250,4 +301,3 @@ app.show_start_screen()
 while app.running:
     app.new()
     app.show_go_screen()
-
